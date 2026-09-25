@@ -53,6 +53,11 @@ void checkShader(unsigned int shader)
     }
 }
 
+void framebufferSizeCallback(GLFWwindow* /*window*/, int width, int height)
+{
+    glViewport(0, 0, width, height);
+}
+
 int main()
 {
     if (!glfwInit())
@@ -80,6 +85,7 @@ int main()
 
     glfwMakeContextCurrent(window);
 
+
     glewExperimental = GL_TRUE;
 
     if (glewInit() != GLEW_OK)
@@ -87,6 +93,27 @@ int main()
         std::cerr << "Failed to initialize GLEW\n";
         return 1;
     }
+
+    glfwSetFramebufferSizeCallback(
+        window,
+        framebufferSizeCallback
+    );
+
+    int framebufferWidth;
+    int framebufferHeight;
+
+    glfwGetFramebufferSize(
+        window,
+        &framebufferWidth,
+        &framebufferHeight
+    );
+
+    glViewport(
+        0,
+        0,
+        framebufferWidth,
+        framebufferHeight
+    );
 
     float vertices[] = {
         // first triangle
@@ -151,7 +178,7 @@ int main()
     glDeleteShader(fragmentShader);
 
     float lastTime = static_cast<float>(glfwGetTime());
-    float yPosition = 2.0f;
+    float yPosition = 1.0f;
     float speed = 0.5f;
 
     while (!glfwWindowShouldClose(window))
