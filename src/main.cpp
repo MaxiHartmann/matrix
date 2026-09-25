@@ -12,12 +12,20 @@ layout(location = 0) in vec3 position;
 
 uniform vec2 gridSize;
 uniform vec2 cellPosition;
+uniform vec2 viewportSize;
 
 void main()
 {
     vec2 p = cellPosition + position.xy;
 
-    vec2 normalized = p / gridSize;
+    float cellHeight = viewportSize.y / gridSize.y;
+    float cellWidth = cellHeight;
+
+    vec2 pixelPosition;
+    pixelPosition.x = p.x * cellWidth;
+    pixelPosition.y = p.y * cellHeight;
+
+    vec2 normalized = pixelPosition / viewportSize;
 
     vec2 clipSpace;
     clipSpace.x = normalized.x * 2.0 - 1.0;
@@ -191,6 +199,7 @@ int main()
     int colorLocation = glGetUniformLocation(shaderProgram, "uColor");
     int gridSizeLocation = glGetUniformLocation(shaderProgram, "gridSize");
     int cellPositionLocation = glGetUniformLocation(shaderProgram, "cellPosition");
+    int viewportSizeLocation = glGetUniformLocation(shaderProgram, "viewportSize");
     
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
@@ -213,6 +222,7 @@ int main()
 
     while (!glfwWindowShouldClose(window))
     {
+
         float currentTime = static_cast<float>(glfwGetTime());
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
@@ -240,10 +250,20 @@ int main()
 
         glUseProgram(shaderProgram);
 
+        int width;
+        int height;
+        glfwGetFramebufferSize(window, &width, &height);
+
         glUniform2f(
             gridSizeLocation, 
             static_cast<float>(gridWidth),
             static_cast<float>(gridHeight)
+        );
+
+        glUniform2f(
+            viewportSizeLocation, 
+            static_cast<float>(width),
+            static_cast<float>(height)
         );
 
         glUniform3f(colorLocation, r, g, b);
