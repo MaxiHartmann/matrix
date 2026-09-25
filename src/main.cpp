@@ -89,9 +89,15 @@ int main()
     }
 
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+        // first triangle
+        -0.2f, -0.3f, 0.0f,
+         0.2f, -0.3f, 0.0f,
+         0.2f,  0.3f, 0.0f
+
+        // second triangle
+        -0.2f, -0.3f, 0.0f,
+         0.2f,  0.3f, 0.0f,
+        -0.2f,  0.3f, 0.0f
     };
     
     unsigned int VAO;
@@ -144,27 +150,38 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
+    float lastTime = static_cast<float>(glfwGetTime());
+    float yPosition = 2.0f;
+    float speed = 0.5f;
 
     while (!glfwWindowShouldClose(window))
     {
+        float currentTime = static_cast<float>(glfwGetTime());
+        float deltaTime = currentTime - lastTime;
+        lastTime = currentTime;
+
+
+        yPosition -= speed * deltaTime;
+
+        if (yPosition < - 1.3f)
+        {
+            yPosition = 1.3f;
+        }
+
         glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        float time = static_cast<float>(glfwGetTime());
-
-        float yOffset = 0.3f * std::sin(time);
-
-        float r = 0.5f * std::sin(time) + 0.5f;
-        float g = 0.5f * std::sin(time + 2.0f) + 0.5f;
-        float b = 0.5f * std::sin(time + 4.0f) + 0.5f;
+        float r = 0.5f * std::sin(currentTime) + 0.5f;
+        float g = 0.5f * std::sin(currentTime + 2.0f) + 0.5f;
+        float b = 0.5f * std::sin(currentTime + 4.0f) + 0.5f;
 
         glUseProgram(shaderProgram);
 
-        glUniform1f(yOffsetLocation, yOffset);
+        glUniform1f(yOffsetLocation, yPosition);
         glUniform3f(colorLocation, r, g, b);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
