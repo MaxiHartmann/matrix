@@ -2,15 +2,21 @@
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <cmath>
 
 const char* vertexShaderSource = R"(
 #version 330 core
 
 layout(location = 0) in vec3 position;
 
+uniform float yOffset;
+
 void main()
 {
-    gl_Position = vec4(position, 1.0);
+    vec3 movedPosition = position;
+    movedPosition.y += yOffset;
+
+    gl_Position = vec4(movedPosition, 1.0);
 }
 )";
 
@@ -26,6 +32,26 @@ void main()
     color = vec4(uColor, 1.0);
 }
 )";
+
+void checkShader(unsigned int shader)
+{
+    int success;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+
+    if (!success)
+    {
+        char infoLog[1024];
+        glGetShaderInfoLog(
+            shader,
+            sizeof(infoLog),
+            nullptr,
+            infoLog
+        );
+
+        std::cerr << "Shader compilation failed:\n"
+                  << infoLog << '\n';
+    }
+}
 
 int main()
 {
@@ -98,10 +124,12 @@ int main()
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, nullptr);
     glCompileShader(vertexShader);
+    checkShader(vertexShader);
     
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, nullptr);
     glCompileShader(fragmentShader);
+    checkShader(fragmentShader);
     
     unsigned int shaderProgram = glCreateProgram();
     
@@ -110,6 +138,7 @@ int main()
     
     glLinkProgram(shaderProgram);
 
+    int yOffsetLocation = glGetUniformLocation(shaderProgram, "yOffset");
     int colorLocation = glGetUniformLocation(shaderProgram, "uColor");
     
     glDeleteShader(vertexShader);
@@ -121,8 +150,19 @@ int main()
         glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
+        float time = static_cast<float>(glfwGetTime());
+
+        float yOffset = 0.3f * std::sin(time);
+
+        float r = 0.5f * std::sin(time) + 0.5f;
+        float g = 0.5f * std::sin(time + 2.0f) + 0.5f;
+        float b = 0.5f * std::sin(time + 4.0f) + 0.5f;
+
         glUseProgram(shaderProgram);
-        glUniform3f(colorLocation, 0.2f, 0.4f, 1.0f);
+
+        glUniform1f(yOffsetLocation, yOffset);
+        glUniform3f(colorLocation, r, g, b);
+
         glBindVertexArray(VAO);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
