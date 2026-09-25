@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 
 const char* vertexShaderSource = R"(
 #version 330 core
@@ -63,6 +64,13 @@ void framebufferSizeCallback(GLFWwindow* /*window*/, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
+
+struct Drop
+{
+    float x;
+    float y;
+    float speed;
+};
 
 int main()
 {
@@ -188,10 +196,20 @@ int main()
     glDeleteShader(fragmentShader);
 
     float lastTime = static_cast<float>(glfwGetTime());
-    float yPosition = 1.0f;
+    // float yPosition = 1.0f;
+    std::vector<Drop> drops = {
+        { 3.0f,  -2.0f,   6.0f },
+        { 8.0f,  -8.0f,   9.0f },
+        { 12.0f, -4.0f,   7.0f },
+        { 17.0f, -12.0f,  5.0f },
+        { 22.0f, -6.0f,  10.0f },
+        { 27.0f, -3.0f,   8.0f },
+        { 31.0f, -10.0f,  6.5f },
+        { 36.0f, -5.0f,   9.5f },
+    };
 
     // grid cells per second
-    float speed = 8.0f;
+    // float speed = 8.0f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -199,12 +217,16 @@ int main()
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
-        yPosition += speed * deltaTime;
-
-        if (yPosition > gridHeight)
+        for (auto& drop : drops)
         {
-            yPosition = -1.0f;
+            drop.y += drop.speed * deltaTime;
+
+            if (drop.y > gridHeight)
+            {
+                drop.y = -1.0f;
+            }
         }
+
 
         glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -213,25 +235,31 @@ int main()
         float g = 0.5f * std::sin(currentTime + 2.0f) + 0.5f;
         float b = 0.5f * std::sin(currentTime + 4.0f) + 0.5f;
 
-        float x = 10.0f;
-        float y = yPosition;
+        // float x = 10.0f;
+        // float y = yPosition;
 
         glUseProgram(shaderProgram);
 
-        glUniform2f(gridSizeLocation, 
+        glUniform2f(
+            gridSizeLocation, 
             static_cast<float>(gridWidth),
             static_cast<float>(gridHeight)
-        );
-
-        glUniform2f(cellPositionLocation, 
-            x, 
-            y
         );
 
         glUniform3f(colorLocation, r, g, b);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+
+        for (const auto& drop : drops)
+        {
+            glUniform2f(
+                cellPositionLocation,
+                drop.x,
+                drop.y
+            );
+
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+        };
 
         glfwSwapBuffers(window);
         glfwPollEvents();
