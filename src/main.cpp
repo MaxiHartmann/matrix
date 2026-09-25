@@ -9,14 +9,20 @@ const char* vertexShaderSource = R"(
 
 layout(location = 0) in vec3 position;
 
-uniform float yOffset;
+uniform vec2 gridSize;
+uniform vec2 cellPosition;
 
 void main()
 {
-    vec3 movedPosition = position;
-    movedPosition.y += yOffset;
+    vec2 p = cellPosition + position.xy;
 
-    gl_Position = vec4(movedPosition, 1.0);
+    vec2 normalized = p / gridSize;
+
+    vec2 clipSpace;
+    clipSpace.x = normalized.x * 2.0 - 1.0;
+    clipSpace.y = 1.0 - normalized.y * 2.0;
+
+    gl_Position = vec4(clipSpace, 0.0, 1.0);
 }
 )";
 
@@ -60,6 +66,11 @@ void framebufferSizeCallback(GLFWwindow* /*window*/, int width, int height)
 
 int main()
 {
+    constexpr int gridWidth  = 40;
+    constexpr int gridHeight = 30;
+
+
+    // GLFW/OpenGL setup
     if (!glfwInit())
     {
         std::cerr << "Failed to initialize GLFW\n";
@@ -116,15 +127,13 @@ int main()
     );
 
     float vertices[] = {
-        // first triangle
-        -0.2f, -0.3f, 0.0f,
-         0.2f, -0.3f, 0.0f,
-         0.2f,  0.3f, 0.0f
+        0.0f, 0.0f, 0.0f,
+        1.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
 
-        // second triangle
-        -0.2f, -0.3f, 0.0f,
-         0.2f,  0.3f, 0.0f,
-        -0.2f,  0.3f, 0.0f
+        0.0f, 0.0f, 0.0f,
+        1.0f, 1.0f, 0.0f,
+        0.0f, 1.0f, 0.0f
     };
     
     unsigned int VAO;
@@ -171,15 +180,18 @@ int main()
     
     glLinkProgram(shaderProgram);
 
-    int yOffsetLocation = glGetUniformLocation(shaderProgram, "yOffset");
     int colorLocation = glGetUniformLocation(shaderProgram, "uColor");
+    int gridSizeLocation = glGetUniformLocation(shaderProgram, "gridSize");
+    int cellPositionLocation = glGetUniformLocation(shaderProgram, "cellPosition");
     
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
     float lastTime = static_cast<float>(glfwGetTime());
     float yPosition = 1.0f;
-    float speed = 0.5f;
+
+    // grid cells per second
+    float speed = 8.0f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -187,12 +199,11 @@ int main()
         float deltaTime = currentTime - lastTime;
         lastTime = currentTime;
 
+        yPosition += speed * deltaTime;
 
-        yPosition -= speed * deltaTime;
-
-        if (yPosition < - 1.3f)
+        if (yPosition > gridHeight)
         {
-            yPosition = 1.3f;
+            yPosition = -1.0f;
         }
 
         glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
@@ -202,9 +213,21 @@ int main()
         float g = 0.5f * std::sin(currentTime + 2.0f) + 0.5f;
         float b = 0.5f * std::sin(currentTime + 4.0f) + 0.5f;
 
+        float x = 10.0f;
+        float y = yPosition;
+
         glUseProgram(shaderProgram);
 
-        glUniform1f(yOffsetLocation, yPosition);
+        glUniform2f(gridSizeLocation, 
+            static_cast<float>(gridWidth),
+            static_cast<float>(gridHeight)
+        );
+
+        glUniform2f(cellPositionLocation, 
+            x, 
+            y
+        );
+
         glUniform3f(colorLocation, r, g, b);
 
         glBindVertexArray(VAO);
